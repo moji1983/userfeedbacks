@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Ubisoft.Interview.SessionFeedback.API</name>
+    </assembly>
+    <members>
+        <member name="T:Ubisoft.Interview.SessionFeedback.BL.ILastFeedbacksWriterService">
+            <summary>
+            This class is used as a batch-writer to store last 15 feedbacks 
+            The timespan is every 10 seconds.
+            The design is every server will get a bunch of UserFeedbacks to store, this class will store the requests in a collection in the memory,
+            then every 10 seconds it will write last 15 ones to the database.
+            </summary>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.Controller.SessionFeedbacksController.Get(System.String,System.Nullable{System.Int32})">
+             <summary>
+            Get the last 15 feedbacks for a specific session. If you provide a rate you will get the last 15 feedbacks for a specific session with that rate.
+             </summary>
+             <param name="sessionId">SessionId needs to be a valid Guid and needs to be provoided as part of url. </param>
+             <param name="rate">The optional rate to get last 15 feedbacks with a specific rate, needs to be provided as query string.</param>
+             <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.Controller.UserFeedbacksController.Get(System.Nullable{System.Int32})">
+            <summary>
+            Get the last 15 feedbacks across all sessions.If you provide a rate you will get the last 15 feedbacks for a specific session with that rate.
+            </summary>
+            <param name="rate">The optional rate to get last 15 feedbacks with a specific rate, needs to be provided as query string.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.Controller.UserFeedbacksController.Get(System.String,System.String)">
+            <summary>
+            Get a sepecific feedback for a specific session
+            </summary>
+            <param name="sessionId">SessionId needs to a valid Guid.</param>
+            <param name="userId">UserId needs to a valid Guid.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.Controller.UserFeedbacksController.Post(System.String,System.String,Ubisoft.Interview.SessionFeedback.Controllers.CreateUserFeedbackDTO)">
+            <summary>
+            Create a user feedback for a specific session..
+            SessionId should be provided as part of route, UserId as header with name Ubi-UserId.
+            Rate and Comment should be provided as body in json format.
+            If you a user has already submitted a feedback for a session it will fail and the result will be 403 .
+            </summary>
+            <param name="sessionId">SessionId needs to a valid Guid.</param>
+            <param name="userId">UserId needs to a valid Guid.</param>
+            <param name="feedback">Comment and Rate in a json document.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.CreateFeedback(Ubisoft.Interview.SessionFeedback.BL.UserFeedbackBO)">
+             <summary>
+             SessionFeedbacks table is used to store feedbacks 
+            To satisfy the requirement to get the last feedbacks for a specific session we had to choose SessionId as our hash key 
+             but since we want to be able to do order on date for a session we had to choose SessionId as hash
+             not the best index since it might be the case that there are many users in one session so the best index would be using userId as hash and sessionId as index 
+             While creating the feedback we use the uniqueness of sessionId and userId as a condition to preventing multiple feedback
+             </summary>
+             <param name="userFeedback"></param>
+             <returns>True if it succeeded to add a feedback for the user, and false if user has already added a feedback for the session.</returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.GetLastFeedbacks">
+            <summary>
+            Using LastUserFeedbacks table to get last 15 feedbacks across all sessions 
+            For this query we are intereted in GlobalSecondaryIndex named LastUserFeedbacksCount-index  always  15 (const) as hash and Date as range lets to do an order by on dates for all session
+            Main hash is just a way to satisfy dynamodb (it needs a unique value) and it is not used in our  
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.GetLastFeedbacksByRate(Ubisoft.Interview.SessionFeedback.BL.UserRate)">
+            <summary>
+            Using LastUserFeedbacks table to get last 15 feedbacks across all sessions 
+            For this query we are intereted in GlobalSecondaryIndex named LastUserFeedbacksCount-Rate-index (having value 1 to 5) as hash and Date as range lets to do an order by on dates for all session within a specific rate
+            Main hash is just a way to satisfy dynamodb (it needs a unique value) and it is not used in our  
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.ExtractQueryResult(System.Collections.Generic.List{System.Collections.Generic.Dictionary{System.String,Amazon.DynamoDBv2.Model.AttributeValue}})">
+            <summary>
+            Mapper function from data values to our Business Object
+            </summary>
+            <param name="items"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.GetLastFeedbacksForSession(System.Guid)">
+            <summary>
+            Using SessionFeedbacks to retrieve the last feedbacks for a session
+            To satisfy the requirement to get the last feedbacks for a specific session we had to choose SessionId as our hash key 
+            not the best index since it might be the case that there are many users in one session so the best index would be using userId as hash and sessionId as index 
+            but since we want to be able to do order on date for a session we had to choose SessionId as hash
+            in this query we are using a local index SubmitDate-index to be able to do orderby on Date field for a specific session
+            </summary>
+            <param name="sessionId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.GetLastFeedbacksForSessionByRate(System.Guid,Ubisoft.Interview.SessionFeedback.BL.UserRate)">
+            <summary>
+            Using SessionFeedbacks to retrieve the last feedbacks for a session
+            To satisfy the requirement to get the last feedbacks for a specific session we had to choose SessionId as our hash key 
+            not the best index since it might be the case that there are many users in one session so the best index would be using userId as hash and sessionId as index 
+            but since we want to be able to do order on date for a session we had to choose SessionId as hash
+            in this query we are using a Global SecondaryIndex index SessionId_Rate_SubmitDate-index (SessionId_rate as hash key and SubmitDate as range key)
+            to be able to do orderby on Date field for specific session's feedbacks with a specified rate
+            </summary>
+            <param name="sessionId"></param>
+            <param name="rate"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Ubisoft.Interview.SessionFeedback.DA.SessionFeedbackRepository.StoreLastFeedbacks(System.Collections.Generic.IEnumerable{Ubisoft.Interview.SessionFeedback.BL.UserFeedbackBO})">
+            <summary>
+            Storing last 15 feedbacks during some seconds time periods
+            A random unique key as main key
+            </summary>
+            <param name="feedbacks"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

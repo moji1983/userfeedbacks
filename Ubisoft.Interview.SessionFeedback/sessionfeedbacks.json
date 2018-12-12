@@ -1,0 +1,79 @@
+{
+  "TableName": "SessionFeedbacks",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "SessionId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "UserId",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "SubmitDate",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "SessionId_Rate",
+      "AttributeType": "S"
+    }
+  ],
+  "LocalSecondaryIndexes": [
+    {
+      "IndexName": "SubmitDate-index",
+      "KeySchema": [
+        {
+          "AttributeName": "SessionId",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "SubmitDate",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+
+  "KeySchema": [
+    {
+      "AttributeName": "SessionId",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "UserId",
+      "KeyType": "RANGE"
+    }
+  ],
+
+
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  },
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "SessionId_Rate_SubmitDate-index",
+      "KeySchema": [
+
+        {
+          "AttributeName": "SessionId_Rate",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "SubmitDate",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      },
+      "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+      }
+    }
+  ]
+}
